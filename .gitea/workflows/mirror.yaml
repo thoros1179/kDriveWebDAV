@@ -1,0 +1,58 @@
+name: Mirror to GitHub and Codeberg
+
+# This workflow is ONLY triggered when pushing to the "mirror" branch
+on:
+  push:
+    branches:
+      - mirror
+
+jobs:
+  force-push-mirror:
+    # Important: This tag must match the labels of your LXC Act Runner
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        # fetch-depth: 0 ensures the complete Git history is loaded
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Force Push to GitHub
+        continue-on-error: true
+        env:
+          # Replace these two values with your actual GitHub username and repository name
+          GH_USER_NAME: ${{ vars.GH_USER_NAME }}
+          GH_REPO_NAME: ${{ vars.GH_REPO_NAME }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "Configuring temporary remote for GitHub..."
+          
+          # Build the authenticated URL
+          REMOTE_URL="https://${GH_USER_NAME}:${GH_TOKEN}@github.com/${GH_USER_NAME}/${GH_REPO_NAME}.git"
+          
+          # Execute the force push:
+          # We take the currently checked-out commit (HEAD)
+          # and push it to the 'main' branch in the remote repository
+          git push --force "$REMOTE_URL" HEAD:refs/heads/main
+          
+          echo "Force push to GitHub (branch: main) completed successfully!"
+
+      - name: Force Push to Codeberg
+        continue-on-error: true
+        env:
+          CB_USER_NAME: ${{ vars.CB_USER_NAME }}
+          CB_REPO_NAME: ${{ vars.CB_REPO_NAME }}
+          CB_TOKEN: ${{ secrets.CB_TOKEN }}
+        run: |
+          echo "Configuring temporary remote for Codeberg..."
+
+          # Build the authenticated URL
+          REMOTE_URL="https://${CB_USER_NAME}:${CB_TOKEN}@codeberg.org/${CB_USER_NAME}/${CB_REPO_NAME}.git"
+
+          # Execute the force push:
+          # We take the currently checked-out commit (HEAD)
+          # and push it to the 'main' branch in the remote repository
+          git push --force "$REMOTE_URL" HEAD:refs/heads/main
+
+          echo "Force push to Codeberg (branch: main) completed successfully!"
